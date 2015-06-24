@@ -130,9 +130,9 @@ int volDownPin = 6;
 int trig0Pin = 9;
 int trig1Pin = 8;
 
-bool volDown;
+bool volDown = false;
 long volDownTimer;
-bool volUp;
+bool volUp = false;
 long volUpTimer;
 
 int volDelay = 5;
@@ -146,7 +146,7 @@ bool ended;
 
 void setup() {
 
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   //Setup GPS
   GPS.begin(9600);
@@ -173,6 +173,9 @@ void setup() {
   //Volume Control
   pinMode(volUpPin, INPUT);
   pinMode(volDownPin, INPUT);
+  digitalWrite(volUpPin, HIGH);
+  digitalWrite(volDownPin, HIGH);
+  
   pinMode(trig0Pin, INPUT);
   pinMode(trig1Pin, INPUT);
   volUp = false;
@@ -195,13 +198,12 @@ void setup() {
   ended = false;
   
   //Debug
-  originLat = 51.;;
+  originLat = 51;
   originLong = -0.085971;
 
   //Get first waypoint
   wayPointIndex = 0;
   getNexWayPoint();
-     
 
 }
 
@@ -301,7 +303,7 @@ void loop() {
   heartbeatFreq = constrain(heartbeatFreq, 200,1400);
   
   //check gps and compass
-  if (millis() - checkSensorTimer > 100) {
+  if (millis() - checkSensorTimer > 200) {
     
     if (GPS.fix) {
       
@@ -372,35 +374,43 @@ void loop() {
   //This only needs to be very short
   int sig = volDelay;
   
-  if(!volUp && targetVol < volume && !volDown && millis() - volDownTimer >  sig*2 ){ //&& millis()- volDownTimer > 50 
+  if( targetVol < volume && !volDown && !volUp && millis() - volDownTimer >  sig*2 ){ //&& millis()- volDownTimer > 50 
+      volume --;
       volDown = true; 
       volDownTimer = millis();
+      //digitalWrite(volDownPin, LOW);
       pinMode(volDownPin, OUTPUT);
-      //Serial.println(volume);
+      Serial.println(volume);
   }
   
   if(volDown && millis() - volDownTimer > sig){
       pinMode(volDownPin, INPUT);
-      volume --;
+      //digitalWrite(volDownPin, HIGH);
+
       volDown = false;
       //Serial.println(volume);
   }
   
   
-  if( !volDown && targetVol > volume && !volUp && millis()- volUpTimer > sig*2 ) { //
+  if( targetVol > volume && !volUp && !volDown & millis()- volUpTimer > sig*2 ) { //
+      volume ++;
       volUp = true;
       volUpTimer = millis();
+      //digitalWrite(volUpPin, LOW);
       pinMode(volUpPin, OUTPUT);
-      //Serial.println(volume);
+      Serial.println(volume);
   }
   
-  if(volUp && millis() - volUpTimer > sig ){
-       pinMode(volUpPin, INPUT);
-       volume ++;
+  if( volUp && millis() - volUpTimer > sig ){
+       
+      pinMode(volUpPin, INPUT);
+       //pinMode(volUpPin, OUTPUT);
+       
+       //digitalWrite(volUpPin, HIGH);
+       
        volUp = false;
        //Serial.println(volume);
   }
-  
   
   if( millis() > heartbeatTimer){
        
