@@ -14,6 +14,8 @@ Adafruit_BNO055 bno = Adafruit_BNO055(55);
 
 //GPS
 SoftwareSerial mySerial(3, 4);
+
+
 Adafruit_GPS GPS(&mySerial);
 boolean usingInterrupt = false;
 void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
@@ -101,6 +103,10 @@ float heading;
 
 
 //Heartbeat samples
+SoftwareSerial soundSerial(12,13);
+#define SFX_RST 15
+
+
 bool heart1;
 bool heart2; 
 long heart1timer;
@@ -120,22 +126,25 @@ float freqInc = 0.05;
 
 
 //Volume
-int maxVol = 100;
+#define LINE_BUFFER_SIZE  30
+char line_buffer[LINE_BUFFER_SIZE];
+
+int maxVol = 204;
 int minVol = 0;
 int volume = 0;
-int targetVol = 100;
-
-int volUpPin = 5;
-int volDownPin = 6;
-int trig0Pin = 9;
-int trig1Pin = 8;
-
-bool volDown = false;
-long volDownTimer;
-bool volUp = false;
-long volUpTimer;
-
-int volDelay = 10;
+int targetVol = 204;
+//
+//int volUpPin = 5;
+//int volDownPin = 6;
+//int trig0Pin = 9;
+//int trig1Pin = 8;
+//
+//bool volDown = false;
+//long volDownTimer;
+//bool volUp = false;
+//long volUpTimer;
+//
+//int volDelay = 10;
 
 //end sequence
 bool endSeq;
@@ -170,18 +179,19 @@ void setup() {
   bno.setExtCrystalUse(true);
   delay(500);
   
-  //Volume Control
-  pinMode(volUpPin, INPUT);
-  pinMode(volDownPin, INPUT);
-  digitalWrite(volUpPin, HIGH);
-  digitalWrite(volDownPin, HIGH);
-  
-  pinMode(trig0Pin, INPUT);
-  pinMode(trig1Pin, INPUT);
-  volUp = false;
-  volDown = false;
+//  //Volume Control
+//  pinMode(volUpPin, INPUT);
+//  pinMode(volDownPin, INPUT);
+//  digitalWrite(volUpPin, HIGH);
+//  digitalWrite(volDownPin, HIGH);
+//  
+//  pinMode(trig0Pin, INPUT);
+//  pinMode(trig1Pin, INPUT);
+//  volUp = false;
+//  volDown = false;
   
   //Heartbeat 
+  soundSerial.begin(9600);
   heart1 = false;
   heart2 = false;
   
@@ -252,7 +262,7 @@ void getNexWayPoint() {
 
 
 void loop() {
-
+  
   if (GPS.newNMEAreceived()) {
     if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
       return;  // we can fail to parse a sentence in which case we should just wait for another
@@ -359,123 +369,73 @@ void loop() {
     
     //This is the accuracy value
     diff = diff * 6 ;
-    float amt = map(diff, 0, 180, 100, 50);
+    float amt = map(diff, 0, 180, 204, 170);
     
     
     
     targetVol = amt;
-    targetVol = constrain(targetVol, 50, 100);
+    targetVol = constrain(targetVol, 170, 204);
     
     checkSensorTimer = millis(); // reset the timer
 
-}
-
+  }
   
-  //This only needs to be very short
-  int sig = volDelay;
-  
-  if(targetVol < volume){
-    pinMode(volDownPin, OUTPUT);
-    delay(sig);
-    pinMode(volDownPin, INPUT);
-    delay(sig);
-    volume --;
+ 
+//   while(soundSerial.available()) {
+//      soundSerial.read();
+//   }
+   
+  if(targetVol < volume ){
+       
+      soundSerial.write(45); //-  
+      soundSerial.write(10); //NL
+      delay(5);
+     
   }
   
   if(targetVol > volume ){
-    pinMode(volUpPin, OUTPUT);
-    delay(sig);
-    pinMode(volUpPin, INPUT);
-    delay(sig);   
-    volume ++;
-  }
-  
-  if(targetVol > 95){
-    pinMode(volUpPin, OUTPUT);
-    delay(sig);
-    pinMode(volUpPin, INPUT);
-    delay(sig);   
-    volume ++;
-  }
-  
-//  if( targetVol < volume && !volDown && !volUp && millis() - volDownTimer >  sig*2 ){ //&& millis()- volDownTimer > 50 
-//      volume --;
-//      volDown = true; 
-//      volDownTimer = millis();
-//      //digitalWrite(volDownPin, LOW);
-//      pinMode(volDownPin, OUTPUT);
-//      Serial.println(volume);
-//  }
-//  
-//  if(volDown && millis() - volDownTimer > sig){
-//      pinMode(volDownPin, INPUT);
-//      //digitalWrite(volDownPin, HIGH);
-//
-//      volDown = false;
-//      //Serial.println(volume);
-//  }
-//  
-//  
-//  if( targetVol > volume && !volUp && !volDown & millis()- volUpTimer > sig*2 ) { //
-//      volume ++;
-//      volUp = true;
-//      volUpTimer = millis();
-//      //digitalWrite(volUpPin, LOW);
-//      pinMode(volUpPin, OUTPUT);
-//      Serial.println(volume);
-//  }
-//  
-//  if( volUp && millis() - volUpTimer > sig ){
-//       
-//      pinMode(volUpPin, INPUT);
-//       //pinMode(volUpPin, OUTPUT);
-//       
-//       //digitalWrite(volUpPin, HIGH);
-//       
-//       volUp = false;
-//       //Serial.println(volume);
-//  }
-//  
-  if( millis() > heartbeatTimer){
        
-       int triggerTimer = heartbeatLength;
-       int interval = map(heartbeatFreq,230,1000,50,110);
- 
-       if(heart1 == false &&  millis() > heartbeatTimer  ){
-          pinMode(trig0Pin, OUTPUT);
-          heart1 = true;
-          //Serial.println("heart 1 start ");
-       }
-       
-       if(heart1 == true &&  millis() - heartbeatTimer >  triggerTimer){
-          pinMode(trig0Pin, INPUT);
-          //heart1 = false;
-          //Serial.println("heart 1 stop ");
-       }
-       
-       if( millis() - heartbeatTimer > triggerTimer + interval && heart2 == false){
-          heart2 = true;
-          pinMode(trig1Pin, OUTPUT);
-          //Serial.println("heart 2 start ");
-       }
-       
-       if( millis() - heartbeatTimer >  (triggerTimer * 2 ) + interval && heart2 == true){
-          pinMode(trig1Pin, INPUT);
-          //Serial.println("heart 2 stop");
-          heartbeatTimer = millis() + heartbeatFreq;
-          heart1 = false;
-          heart2 = false;
-       }
-       
-    }
-    
-    if(endSeq){
-      
-      
-    }
-    
-}
+       soundSerial.write(43); //++
+       soundSerial.write(10); //NL
 
+       delay(5);
+  }
+  
+  
+  soundSerial.listen();
+  
+  if(soundSerial.available() ){
+  
+   int x  = soundSerial.readBytesUntil('\n', line_buffer, LINE_BUFFER_SIZE);
+   line_buffer[x] = 0;
+   //Serial.println(line_buffer);
+   
+   //if is volume 
+   if( x == 6){
+       int v = atoi(line_buffer);
+        if(v > 0 && v <= 204){
+         volume = v;
+         Serial.println(volume);
+       }
+      
+   }
+   
+  }
+  
+  
+  //Play heartbeat
+  if( millis() > heartbeatTimer){
+      
+      soundSerial.print('#');
+      soundSerial.println(4);
+      heartbeatTimer = millis() + heartbeatFreq;
+    
+      if(endSeq){
+      
+      }
+  }
+
+}
 
 double angleFromCoordinate(double lat1, double long1, double lat2, double long2) {
 
