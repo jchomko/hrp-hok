@@ -135,7 +135,7 @@ long volDownTimer;
 bool volUp = false;
 long volUpTimer;
 
-int volDelay = 5;
+int volDelay = 10;
 
 //end sequence
 bool endSeq;
@@ -374,44 +374,68 @@ void loop() {
   //This only needs to be very short
   int sig = volDelay;
   
-  if( targetVol < volume && !volDown && !volUp && millis() - volDownTimer >  sig*2 ){ //&& millis()- volDownTimer > 50 
-      volume --;
-      volDown = true; 
-      volDownTimer = millis();
-      //digitalWrite(volDownPin, LOW);
-      pinMode(volDownPin, OUTPUT);
-      Serial.println(volume);
+  if(targetVol < volume){
+    pinMode(volDownPin, OUTPUT);
+    delay(sig);
+    pinMode(volDownPin, INPUT);
+    delay(sig);
+    volume --;
   }
   
-  if(volDown && millis() - volDownTimer > sig){
-      pinMode(volDownPin, INPUT);
-      //digitalWrite(volDownPin, HIGH);
-
-      volDown = false;
-      //Serial.println(volume);
+  if(targetVol > volume ){
+    pinMode(volUpPin, OUTPUT);
+    delay(sig);
+    pinMode(volUpPin, INPUT);
+    delay(sig);   
+    volume ++;
   }
   
-  
-  if( targetVol > volume && !volUp && !volDown & millis()- volUpTimer > sig*2 ) { //
-      volume ++;
-      volUp = true;
-      volUpTimer = millis();
-      //digitalWrite(volUpPin, LOW);
-      pinMode(volUpPin, OUTPUT);
-      Serial.println(volume);
+  if(targetVol > 95){
+    pinMode(volUpPin, OUTPUT);
+    delay(sig);
+    pinMode(volUpPin, INPUT);
+    delay(sig);   
+    volume ++;
   }
   
-  if( volUp && millis() - volUpTimer > sig ){
-       
-      pinMode(volUpPin, INPUT);
-       //pinMode(volUpPin, OUTPUT);
-       
-       //digitalWrite(volUpPin, HIGH);
-       
-       volUp = false;
-       //Serial.println(volume);
-  }
-  
+//  if( targetVol < volume && !volDown && !volUp && millis() - volDownTimer >  sig*2 ){ //&& millis()- volDownTimer > 50 
+//      volume --;
+//      volDown = true; 
+//      volDownTimer = millis();
+//      //digitalWrite(volDownPin, LOW);
+//      pinMode(volDownPin, OUTPUT);
+//      Serial.println(volume);
+//  }
+//  
+//  if(volDown && millis() - volDownTimer > sig){
+//      pinMode(volDownPin, INPUT);
+//      //digitalWrite(volDownPin, HIGH);
+//
+//      volDown = false;
+//      //Serial.println(volume);
+//  }
+//  
+//  
+//  if( targetVol > volume && !volUp && !volDown & millis()- volUpTimer > sig*2 ) { //
+//      volume ++;
+//      volUp = true;
+//      volUpTimer = millis();
+//      //digitalWrite(volUpPin, LOW);
+//      pinMode(volUpPin, OUTPUT);
+//      Serial.println(volume);
+//  }
+//  
+//  if( volUp && millis() - volUpTimer > sig ){
+//       
+//      pinMode(volUpPin, INPUT);
+//       //pinMode(volUpPin, OUTPUT);
+//       
+//       //digitalWrite(volUpPin, HIGH);
+//       
+//       volUp = false;
+//       //Serial.println(volume);
+//  }
+//  
   if( millis() > heartbeatTimer){
        
        int triggerTimer = heartbeatLength;
