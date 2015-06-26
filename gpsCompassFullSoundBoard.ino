@@ -22,63 +22,16 @@ void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
 
 //Waypoints
 int wayPointIndex = 0;
-const int nrWayPoints = 165;
+const int nrWayPoints = 21;
 const static float PROGMEM wayPoints[nrWayPoints] = {
--0.1368907070722702,51.50374231398688,1000,
--0.1367733353700928,51.50367268553593,1000,
--0.1367425024225077,51.5036574418566,1000,
--0.1367003347890328,51.5036728657903,1000,
--0.1364694652490672,51.50381624422109,400,
--0.1364359452045472,51.50383462708184,850,
--0.1363882397439953,51.50381226001926,700,
--0.1363524646521663,51.50377790967539,750,
--0.1361119171621994,51.5035727909398,800,
--0.1360862380983341,51.50355489334942,850,
--0.1360588579583388,51.50354705825301,900,
--0.1360208963924181,51.50355873084585,900,
--0.1359826066403191,51.50358781567201,900,
--0.1359267105278905,51.50361866224996,950,
--0.1358868707091665,51.50361679349424,1000,
--0.1358559615956079,51.50358472257599,1000,
--0.1358030822540124,51.50354731642867,1000,
--0.1357594961885256,51.50353456997557,950,
--0.1357170021015863,51.503538323179,800,
--0.135675205626905,51.50356402938309,750,
--0.1352453948709686,51.5037516245444,600,
--0.1341916689411571,51.50418701651314,550,
--0.1323501354193735,51.50493145975183,500,
--0.1310414509494418,51.50426770678978,600,
--0.1303933881231789,51.50421911932911,900,
--0.129813774387002,51.50426897575026,1000,
--0.1291784612517122,51.50439304386552,900,
--0.1290078105104542,51.50390374968751,900,
--0.1289612997011602,51.50360945261307,900,
--0.129070044928693,51.50334283713119,900,
--0.1292266390515118,51.50310195341267,900,
--0.1294451022298193,51.50285377759403,900,
--0.1295667163240244,51.50263808926961,900,
--0.1296747989329772,51.50243774321953,900,
--0.129644994954532,51.50236011136204,900,
--0.1295487832499087,51.50231911298264,900,
--0.1293460039676431,51.50231885972333,900,
--0.1286061434920183,51.50228489071829,900,
--0.1279392948089653,51.50223803680529,900,
--0.1272816983945735,51.50220307345162,900,
--0.126735034385923,51.50217771651002,900,
--0.1264403913947676,51.50216398125168,900,
--0.1262421901156885,51.50219749134006,900,
--0.1261984331228294,51.50219900398593,900,
--0.1261207369583872,51.50219750477234,900,
--0.126047529621035,51.50219361405294,900,
--0.1259749330153581,51.50219317178686,900,
--0.1259168870410809,51.50219329761568,900,
--0.1259349871937576,51.50312115441,900,
--0.1259673390933869,51.50332418951741,900,
--0.1260014907537166,51.50365414233244,900,
--0.126019595090846,51.50392856932151,900,
--0.1260495320705213,51.50423119462774,900,
--0.126104680394199,51.50438329518128,900,
--0.1261526192758933,51.504551885458,500,
+-0.08608260550463043,51.54874667719641,1000,
+-0.08746145813916084,51.54878862889121,900,
+-0.08720047218794047,51.54913161855076,800,
+-0.08445619532468696,51.54901217659432,700,
+-0.08433878673073991,51.54859635355947,600,
+-0.08604099348546002,51.54874467479521,500,
+-0.08613450145121049,51.54833290398118,400,
+
 };
 
 
@@ -151,6 +104,7 @@ bool endSeq;
 long endSeqTimer;
 int endSeqDuration;
 bool ended;
+bool hasFix = false;
 
 
 void setup() {
@@ -200,7 +154,7 @@ void setup() {
   heartbeatLength = 170;
   
   //Debug
-  pinMode(13, OUTPUT);
+  //pinMode(13, OUTPUT);
   
   //End Sequence
   endSeq = false;
@@ -208,8 +162,8 @@ void setup() {
   ended = false;
   
   //Debug
-  originLat = 51;
-  originLong = -0.085971;
+  //originLat = 51;
+  //originLong = -0.085971;
 
   //Get first waypoint
   wayPointIndex = 0;
@@ -263,6 +217,8 @@ void getNexWayPoint() {
 
 void loop() {
   
+  mySerial.listen();
+  
   if (GPS.newNMEAreceived()) {
     if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
       return;  // we can fail to parse a sentence in which case we should just wait for another
@@ -297,17 +253,19 @@ void loop() {
   }
   
 //  
+
+  //Directional averaging
   //might make it easier to find the right direction
-  float diff = map(targetVol, 50,100, 200,0);
+  float diff = map(targetVol, 170,204, 400,0);
   
   if(heartbeatFreq > targetFreq - diff){
-    heartbeatFreq -= freqInc;
+    targetFreq -= freqInc;
     //Serial.println(heartbeatFreq);
   }
   
   if(heartbeatFreq < targetFreq -diff){
-    heartbeatFreq += freqInc;
-    //Serial.println(heartbeatFreq);
+    targetFreq += freqInc;
+    //tar.println(heartbeatFreq);
   }
   
   heartbeatFreq = constrain(heartbeatFreq, 200,1400);
@@ -316,11 +274,13 @@ void loop() {
   if (millis() - checkSensorTimer > 200) {
     
     if (GPS.fix) {
+      hasFix = true;
       
       originLat = GPS.latitudeDegrees;
       originLong = GPS.longitudeDegrees;
       
       if(!debug){
+      
       Serial.print("C,");
       Serial.print(originLat, 6);
       Serial.print(",");
@@ -356,7 +316,7 @@ void loop() {
     //heartbeatFreq = map(dist, nextWaypointDist, 0.01, lastWaypointFreq, nextWaypointFreq);
     //heartbeatFreq = constrain(heartbeatFreq, 500,1300);
     
-    if (dist <= 0.01 && wayPointIndex < nrWayPoints) {
+    if (dist <= 0.02 && wayPointIndex < nrWayPoints) {
         getNexWayPoint();
     }
     
@@ -368,13 +328,13 @@ void loop() {
     }
     
     //This is the accuracy value
-    diff = diff * 6 ;
-    float amt = map(diff, 0, 180, 204, 170);
+    diff = diff * 7 ;
+    float amt = map(diff, 0, 180, 204, 150);
     
     
     
     targetVol = amt;
-    targetVol = constrain(targetVol, 170, 204);
+    targetVol = constrain(targetVol, 150, 204);
     
     checkSensorTimer = millis(); // reset the timer
 
@@ -384,6 +344,8 @@ void loop() {
 //   while(soundSerial.available()) {
 //      soundSerial.read();
 //   }
+   
+  soundSerial.listen();
    
   if(targetVol < volume ){
        
@@ -397,12 +359,11 @@ void loop() {
        
        soundSerial.write(43); //++
        soundSerial.write(10); //NL
-
        delay(5);
   }
   
   
-  soundSerial.listen();
+  
   
   if(soundSerial.available() ){
   
@@ -424,10 +385,10 @@ void loop() {
   
   
   //Play heartbeat
-  if( millis() > heartbeatTimer){
+  if( millis() > heartbeatTimer && hasFix){
       
       soundSerial.print('#');
-      soundSerial.println(4);
+      soundSerial.println(2);
       heartbeatTimer = millis() + heartbeatFreq;
     
       if(endSeq){
