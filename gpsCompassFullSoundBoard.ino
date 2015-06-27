@@ -16,21 +16,43 @@ Adafruit_BNO055 bno = Adafruit_BNO055(55);
 SoftwareSerial mySerial(3, 4);
 
 
+//float startLat = 51.50377023880998;
+//float startLong = -0.1369838400094925;
+
 Adafruit_GPS GPS(&mySerial);
 boolean usingInterrupt = false;
 void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
 
 //Waypoints
 int wayPointIndex = 0;
-const int nrWayPoints = 21;
+const int nrWayPoints = 75;
 const static float PROGMEM wayPoints[nrWayPoints] = {
--0.08608260550463043,51.54874667719641,1000,
--0.08746145813916084,51.54878862889121,900,
--0.08720047218794047,51.54913161855076,900,
--0.08445619532468696,51.54901217659432,900,
--0.08433878673073991,51.54859635355947,900,
--0.08604099348546002,51.54874467479521,900,
--0.08613450145121049,51.54833290398118,900,
+-0.1369838400094925,51.50377023880998,1000,
+-0.1368811176538509,51.50366174958437,500,
+-0.1363985210878116,51.50384910355171,700,
+-0.1363376213810341,51.50372420981144,700,
+-0.1361385795431025,51.50352879390383,700,
+-0.1357797265929273,51.50349478788194,650,
+-0.1352453948709686,51.5037516245444,750,
+-0.1341916689411571,51.50418701651314,850,
+-0.132295188544943,51.5049237415812,900,
+-0.1310848318345359,51.50415317469113,700,
+-0.1289332780924568,51.50438397334561,900,
+-0.1289498203464035,51.50361453996044,950,
+-0.129068292374851,51.50334649946367,1000,
+-0.1294389249014005,51.50291282735877,1000,
+-0.1296158413571358,51.50257116882091,1000,
+-0.1296273215960753,51.50231348766234,600,
+-0.1265036760831473,51.50219079580769,800,
+-0.1259168870410809,51.50219329761568,900,
+-0.1259491283343261,51.50318147959608,950,
+-0.125819776400552,51.503184896044,800,
+-0.1258843403960619,51.50363446579164,750,
+-0.1259214654869534,51.50401918117986,700,
+-0.1260542809803467,51.50401469189003,600,
+-0.1260499425416484,51.5040116478938,500,
+-0.1262576451380604,51.50479780571238,0,
+
 
 };
 
@@ -146,8 +168,8 @@ void setup() {
   
   //Heartbeat 
   soundSerial.begin(9600);
-  heart1 = false;
-  heart2 = false;
+  //heart1 = false;
+  //heart2 = false;
   
   heartbeatTimer = 0;
   heartbeatFreq = 800;
@@ -199,6 +221,10 @@ void getNexWayPoint() {
     Serial.print("target freq : ");
     Serial.println(targetFreq);
     Serial.println(heartbeatFreq);
+    
+    if(targetFreq == 0){
+      ended = true;
+    }
     //nextWaypointDist = calculateDistance();
     
   } else {
@@ -217,61 +243,36 @@ void getNexWayPoint() {
 
 void loop() {
   
-//   mySerial.listen();
-//  
-//    if (GPS.newNMEAreceived()) {
-//      if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
-//        return;  // we can fail to parse a sentence in which case we should just wait for another
-//    }
-    
   
   
-  
-  //if millis() or timer wraps around, we'll just reset it
- // if (checkSensorTimer > millis())  checkSensorTimer = millis();
+  if (checkSensorTimer > millis())  checkSensorTimer = millis();
  
   if(Serial.available() > 0){
       
       //heartbeatFreq = Serial.parseInt();
       //heartbeatSpace = Serial.parseInt();
-      //targetVol =
-//      int r = Serial.parseInt();
-//      if(r != 0){
-//        targetVol = r;
-//      }
-//      
-//      r = Serial.parseInt();
-//      if(r != 0){
-//        volDelay = r;
-//      }
-//      
-      // int heartFreq = Serial.parseInt();
-      //Serial.println(heartbeatFreq);
-      // Serial.println(heartbeatSpace);
-//      Serial.println(targetVol);
-//      Serial.println(volDelay);
+      
       Serial.read();
       getNexWayPoint();
       
   }
-  
-//  
+    
 
-  //Directional averaging
   //might make it easier to find the right direction
-  float diff = map(targetVol, 170,204, 400,0);
+  //float diff = map(targetVol, 170,204, 400,0);
+  //float diff = 0;
   
-  if(heartbeatFreq > targetFreq - diff){
-    targetFreq -= freqInc;
+  if(heartbeatFreq > targetFreq){
+    heartbeatFreq -= freqInc;
     //Serial.println(heartbeatFreq);
   }
   
-  if(heartbeatFreq < targetFreq -diff){
-    targetFreq += freqInc;
+  if(heartbeatFreq < targetFreq){
+    heartbeatFreq += freqInc;
     //tar.println(heartbeatFreq);
   }
   
-  heartbeatFreq = constrain(heartbeatFreq, 200,1400);
+  heartbeatFreq = constrain(heartbeatFreq, 500,1400);
   
   //check gps and compass
   if (millis() - checkSensorTimer > 200) {
@@ -288,13 +289,13 @@ void loop() {
     if (GPS.fix) {
       hasFix = true;
       
-      if( GPS.latitudeDegrees > 0.0){
+      //if( GPS.latitudeDegrees > 0.0){
         originLat = GPS.latitudeDegrees;
-      }
+      //}
       
-      if( GPS.longitudeDegrees > 0.0){
+      //if( GPS.longitudeDegrees > 0.0){
         originLong = GPS.longitudeDegrees;
-      }
+      //}
       
       
       
@@ -354,6 +355,7 @@ void loop() {
     
     targetVol = amt;
     targetVol = constrain(targetVol, 150, 204);
+   // targetVol = 204;
     
     checkSensorTimer = millis(); // reset the timer
 
@@ -402,12 +404,12 @@ void loop() {
   
   
   //Play heartbeat
-  if( millis() > heartbeatTimer && hasFix){
+  if( millis() > heartbeatTimer && hasFix && !ended ){
       
       soundSerial.print('#');
-      soundSerial.println(2);
+      soundSerial.println(1);
       heartbeatTimer = millis() + heartbeatFreq;
-    
+      
       if(endSeq){
       
       }
