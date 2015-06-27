@@ -245,7 +245,7 @@ void loop() {
   
   
   
-  if (checkSensorTimer > millis())  checkSensorTimer = millis();
+  //if (checkSensorTimer > millis())  checkSensorTimer = millis();
  
   if(Serial.available() > 0){
       
@@ -336,7 +336,7 @@ void loop() {
     //heartbeatFreq = map(dist, nextWaypointDist, 0.01, lastWaypointFreq, nextWaypointFreq);
     //heartbeatFreq = constrain(heartbeatFreq, 500,1300);
     
-    if (dist <= 0.02 && wayPointIndex < nrWayPoints) {
+    if (dist <= 0.01 && wayPointIndex < nrWayPoints) {
         getNexWayPoint();
     }
     
