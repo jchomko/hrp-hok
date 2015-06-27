@@ -26,11 +26,11 @@ const int nrWayPoints = 21;
 const static float PROGMEM wayPoints[nrWayPoints] = {
 -0.08608260550463043,51.54874667719641,1000,
 -0.08746145813916084,51.54878862889121,900,
--0.08720047218794047,51.54913161855076,800,
--0.08445619532468696,51.54901217659432,700,
--0.08433878673073991,51.54859635355947,600,
--0.08604099348546002,51.54874467479521,500,
--0.08613450145121049,51.54833290398118,400,
+-0.08720047218794047,51.54913161855076,900,
+-0.08445619532468696,51.54901217659432,900,
+-0.08433878673073991,51.54859635355947,900,
+-0.08604099348546002,51.54874467479521,900,
+-0.08613450145121049,51.54833290398118,900,
 
 };
 
@@ -217,12 +217,15 @@ void getNexWayPoint() {
 
 void loop() {
   
-  mySerial.listen();
+//   mySerial.listen();
+//  
+//    if (GPS.newNMEAreceived()) {
+//      if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
+//        return;  // we can fail to parse a sentence in which case we should just wait for another
+//    }
+    
   
-  if (GPS.newNMEAreceived()) {
-    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
-      return;  // we can fail to parse a sentence in which case we should just wait for another
-  }
+  
   
   //if millis() or timer wraps around, we'll just reset it
  // if (checkSensorTimer > millis())  checkSensorTimer = millis();
@@ -273,11 +276,27 @@ void loop() {
   //check gps and compass
   if (millis() - checkSensorTimer > 200) {
     
+    mySerial.listen();
+  
+    if (GPS.newNMEAreceived()) {
+      if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
+        return;  // we can fail to parse a sentence in which case we should just wait for another
+    }
+    
+    
+    
     if (GPS.fix) {
       hasFix = true;
       
-      originLat = GPS.latitudeDegrees;
-      originLong = GPS.longitudeDegrees;
+      if( GPS.latitudeDegrees > 0.0){
+        originLat = GPS.latitudeDegrees;
+      }
+      
+      if( GPS.longitudeDegrees > 0.0){
+        originLong = GPS.longitudeDegrees;
+      }
+      
+      
       
       if(!debug){
       
@@ -362,9 +381,6 @@ void loop() {
        delay(5);
   }
   
-  
-  
-  
   if(soundSerial.available() ){
   
    int x  = soundSerial.readBytesUntil('\n', line_buffer, LINE_BUFFER_SIZE);
@@ -373,8 +389,9 @@ void loop() {
    
    //if is volume 
    if( x == 6){
+       //probably getting bad volume value here every x seconds or so
        int v = atoi(line_buffer);
-        if(v > 0 && v <= 204){
+        if( v > 0 && v <= 204){
          volume = v;
          Serial.println(volume);
        }
