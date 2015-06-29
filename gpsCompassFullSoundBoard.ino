@@ -21,22 +21,32 @@ void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
 
 //Waypoints
 int wayPointIndex = 0;
-const int nrWayPoints = 24;
+const int nrWayPoints = 60;
 const static float PROGMEM wayPoints[nrWayPoints] = {
- -0.08663704669734762,51.54877195418958,1000,0.02,
--0.08746145813916084,51.54878862889121,600,0.01,
--0.08720047218794047,51.54913161855076,1000,0.01,
--0.08445619532468696,51.54901217659432,600,0.01,
--0.08433878673073991,51.54859635355947,550,0.01,
--0.08604099348546002,51.54874467479521,550,0.01,
+-0.1378124221582155,51.50319487987932,1000,0.03,
+-0.1363383460496292,51.50372257552351,550,0.02,
+-0.1358027642754989,51.50344741972956,700,0.01,
+-0.1327366711074507,51.50473651523561,900,0.02,
+-0.1311008271607295,51.50417246559676,1000,0.01,
+-0.1288613453177201,51.50437599220994,800,0.01,
+-0.1290499224232311,51.50336152145501,600,0.01,
+-0.129433536200515,51.50288882796171,750,0.01,
+-0.129635440084217,51.50227510996278,900,0.01,
+-0.1263774214151769,51.50218268049936,1000,0.01,
+-0.12593523014098,51.5023101803933,600,0.01,
+-0.1258602243100038,51.50315301039916,800,0.01,
+-0.1260485402417122,51.50402909038237,1000,0.01,
+-0.1262716680653198,51.50468010595399,650,0.01,
+-0.126473150172578,51.5052757598957,550,0.01,
+
 };
 
 
 long checkSensorTimer = millis();
 
 //const char NUM_SAMPLES = 5;
-double originLat;
-double originLong;
+double originLat = 0.0;
+double originLong = 0.0;
 
 
 double targetLat;
@@ -65,7 +75,7 @@ int heartbeatLength;
 
 int targetFreq;
 int currentFreq;
-float freqInc = 0.01;
+float freqInc = 0.005;
 
 
 //Volume
@@ -75,7 +85,7 @@ char line_buffer[LINE_BUFFER_SIZE];
 int maxVol = 204;
 int minVol = 0;
 int volume = 0;
-int targetVol = 204;
+int targetVol = 0;
 
 //end sequence
 bool endSeq;
@@ -83,12 +93,12 @@ long endSeqTimer;
 int endSeqDuration;
 
 //debug new devices - don't wait for gps
-bool hasFix = true;
-
-
+//bool hasFix = false;
 bool debug = true;
-bool ended = false;
+bool ended = true;
 bool runHeartbeat = false;
+
+long calibrationTimer;
 
 void setup() {
 
@@ -130,30 +140,27 @@ void setup() {
   
   //End Sequence
   endSeq = false;
-  endSeqDuration = 10*1000; // one minute
+ // endSeqDuration = 60*1000; // one minute
   ended = false;
+  runHeartbeat = false;
+  
   endSeqTimer = millis();
   
   //Debug
   wayPointIndex = 0;
   targetMinDist = 0.01;
+  
   getNexWayPoint();
+  
+  calibrationTimer = millis();
+  
   
 }
 
 
 void getNexWayPoint() {
    
-   if(wayPointIndex >= nrWayPoints){
-      
-      ended = true;
-      endSeqTimer = millis();
-      wayPointIndex = 0;
-      Serial.println("ending");
-      
-   } 
    
-    
    if(wayPointIndex < nrWayPoints) {
      //Lat and long are switched on KML google maps output
      //Long is first value, lat is second
@@ -170,28 +177,42 @@ void getNexWayPoint() {
     
     //we've reached the first point and on to the second
     //if we're on to the second waypoint
-    if(wayPointIndex >= 8 && runHeartbeat == false){
+    if(wayPointIndex >= 8){
+      
       runHeartbeat = true;
       ended = false;
+      heartbeatTimer = millis();
+      
+   }
+    
+    if(wayPointIndex >= nrWayPoints && ended == false){
+        ended = true;
+        endSeqTimer = millis() + 60000;
+        wayPointIndex = 0;
+        targetVol = 204;
+        //if(debug)
+        Serial.println("ending");
+     } 
+    
+    
+     //if(debug){
+        Serial.print("N,");
+        Serial.println(wayPointIndex);
+        Serial.print("T,");
+        Serial.print(targetLat, 6);
+        Serial.print(",");
+        Serial.println(targetLong, 6);
+        
+        Serial.print("target freq : ");
+        Serial.println(targetFreq);
+        Serial.println(heartbeatFreq);
+        Serial.println(targetMinDist);
+      // }
+       
+    }else{
+      
     }
-    
-    
-    
-    // if(debug){
-      
-      Serial.print("N,");
-      Serial.println(wayPointIndex);
-      Serial.print("T,");
-      Serial.print(targetLat, 6);
-      Serial.print(",");
-      Serial.println(targetLong, 6);
-      
-      Serial.print("target freq : ");
-      Serial.println(targetFreq);
-      Serial.println(heartbeatFreq);
-    //}
-    
-  }
+
 }
 
 void loop() {
@@ -199,13 +220,18 @@ void loop() {
   //if (checkSensorTimer > millis())  checkSensorTimer = millis();
  
  //if(debug){
-    if(Serial.available() > 0){
+   
+   if(Serial.available() > 0){
         //heartbeatFreq = Serial.parseInt();
         //heartbeatSpace = Serial.parseInt();
-        Serial.read();
-        getNexWayPoint();
-    }
-// }
+        char c = Serial.read();
+        
+        if(c == 'n'){
+          getNexWayPoint();
+        }
+  // }
+   
+ }
     
 
   //might make it easier to find the right direction
@@ -286,14 +312,12 @@ void loop() {
     diff = diff * 7 ;
     float amt = map(diff, 0, 180, 204, 150);
     
-    if(!ended){
+    if(ended == false){
       targetVol = amt;
       targetVol = constrain(targetVol, 150, 204);
-     }else{
-      targetVol = 204;
-    }
+     }
     
-    checkSensorTimer = millis(); // reset the timer
+   checkSensorTimer = millis(); // reset the timer
 
   }
 
@@ -335,27 +359,46 @@ void loop() {
   }
   
   
-  if( ended && millis() - endSeqTimer < endSeqDuration){
+  //if( ended && millis() - endSeqTimer < 20*1000){
     //could do something here like increase heartrate
-  }
+  //}
   
-  
-  if( ended && millis() - endSeqTimer > endSeqDuration && runHeartbeat){
+ // long d = 60*1000;
+  if(ended &&  millis() > endSeqTimer){
     //Kill king after 30 secs
-    runHeartbeat = false;
-    Serial.println("ending heartbeat" );
+     runHeartbeat = false;
+    //targetVol = 0;
+    
+//   
+//    if(millis() - endSeqTimer < 500){
+//      heartbeatTimer = millis() + (heartbeatFreq * 3);
+//      targetVol = 0;
+//      targetFreq = 1000;
+//      Serial.println("jump");
+//    }
+
+//    delay(1000);
+    
     //ended = false;
+    
+    //ended = false;
+ //   if(volume <= 10){
+      Serial.println("ending heartbeat" );
+      ended = false;
+      Serial.println("resetting" );
+      getNexWayPoint();
+      //runHeartbeat = false;
+    
+    //}
   }
   
-  //after 4 minutes - allow for startup
-  if(ended && millis() - endSeqTimer > 20*1000){
-    ended = false;
-    Serial.println("resetting" );
-    getNexWayPoint();
-  }
+  //after 1 minutes - allow for startup
+  //if(ended && millis() - endSeqTimer > 40*1000){
+   
+  //}
   
   //Play heartbeat
-  if( millis() > heartbeatTimer && runHeartbeat == true){ // && hasFix && !ended
+  if( millis() > heartbeatTimer && runHeartbeat){ // && hasFix && !ended
       
       soundSerial.print('#');
       soundSerial.println(1);
