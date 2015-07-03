@@ -291,12 +291,12 @@ void loop() {
   
   
 //  int t = 30*1000;
-  if(millis() - checkHeadingTimer > 20000){
+ // if(millis() - checkHeadingTimer > 20000){
       
-      bearing = calculateBearing();
-      checkHeadingTimer = millis();
+ //     bearing = calculateBearing();
+ //     checkHeadingTimer = millis();
   
-  }
+  //}
   //check gps and compass
   if (millis() - checkSensorTimer > 200) {
     
@@ -350,7 +350,7 @@ void loop() {
     bno.getEvent(&event);
     heading = event.orientation.x;
     
-    //bearing = calculateBearing();
+    bearing = calculateBearing();
     // bearing += declinationDegree;
    
     int diff = abs(bearing - heading);
