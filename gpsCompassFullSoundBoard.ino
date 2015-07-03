@@ -106,7 +106,7 @@ int endSeqDuration;
 
 //debug new devices - don't wait for gps
 //bool hasFix = false;
-bool debug = false;
+bool debug = true;
 bool ended = true;
 bool runHeartbeat = false;
 
@@ -182,10 +182,19 @@ void getNexWayPoint() {
      //Lat and long are switched on KML google maps output
      //Long is first value, lat is second
      //Reading from SRAM 
+     
+     originLong = targetLong;
+     originLat = targetLat;
+     
      targetLong = pgm_read_float_near(wayPoints + wayPointIndex);
      targetLat = pgm_read_float_near(wayPoints + wayPointIndex + 1);
      targetFreq = pgm_read_float_near(wayPoints + wayPointIndex + 2);
      targetMinDist = pgm_read_float_near(wayPoints + wayPointIndex + 3);
+     
+     
+     //Get bearing once per arrival
+     bearing = calculateBearing();
+    
      //targetLong = wayPoints[wayPointIndex];
      //targetLat = wayPoints[wayPointIndex + 1];
      //targetFreq = wayPoints[wayPointIndex + 2];
@@ -318,7 +327,7 @@ void loop() {
     bno.getEvent(&event);
     heading = event.orientation.x;
     
-    bearing = calculateBearing();
+    //bearing = calculateBearing();
     // bearing += declinationDegree;
    
     int diff = abs(bearing - heading);
