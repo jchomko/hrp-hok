@@ -11,7 +11,7 @@
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 
 //GPS
-SoftwareSerial mySerial(3, 4);
+SoftwareSerial mySerial(3,4); //normal - 3,4 //order wrong on maple heart  - 4,3
 
 
 
@@ -25,7 +25,7 @@ const int nrWayPoints = 52;
 const static float PROGMEM wayPoints[nrWayPoints] = {
   //52 final waypoints
 -0.1378124221582155,51.50319487987932,1000,0.03, 
--0.1363383460496292,51.50372257552351,650,0.02, //550 for tim
+-0.1363383460496292,51.50372257552351,750,0.02, //550 for tim
 -0.135799071403041,51.50347459854204,700,0.01,
 -0.1327366711074507,51.50473651523561,900,0.02,
 -0.1311300017540207,51.50417597886298,1000,0.01,
@@ -71,6 +71,8 @@ float latitudeRadians, wayPointLatitudeRadians, longitudeRadians, wayPointLongit
 const float pi = 3.14159265;
 const int radiusOfEarth = 6371; // in km
 float heading;
+
+long checkHeadingTimer;
 
 
 //Heartbeat samples
@@ -170,6 +172,7 @@ void setup() {
   //getNexWayPoint();
   
   calibrationTimer = millis();
+  checkHeadingTimer = millis();
   
   
 }
@@ -183,8 +186,9 @@ void getNexWayPoint() {
      //Long is first value, lat is second
      //Reading from SRAM 
      
-     originLong = targetLong;
-     originLat = targetLat;
+     //Calculate bearing from current location - 
+     //originLong = targetLong;
+     //originLat = targetLat;
      
      targetLong = pgm_read_float_near(wayPoints + wayPointIndex);
      targetLat = pgm_read_float_near(wayPoints + wayPointIndex + 1);
@@ -192,7 +196,7 @@ void getNexWayPoint() {
      targetMinDist = pgm_read_float_near(wayPoints + wayPointIndex + 3);
      
      
-     //Get bearing once per arrival
+     //Get bearing once per arrival - now calculating from curr loc
      bearing = calculateBearing();
     
      //targetLong = wayPoints[wayPointIndex];
@@ -256,17 +260,10 @@ void loop() {
     //tar.println(heartbeatFreq);
   }
   
-  heartbeatFreq = constrain(heartbeatFreq, 500,1400);
+  heartbeatFreq = constrain(heartbeatFreq, 650,1400);
   
   
-   //Play heartbeat
-  if( millis() > heartbeatTimer && runHeartbeat){ // && hasFix && !ended
-      
-      soundSerial.print('#');
-      soundSerial.println(1);
-      heartbeatTimer = millis() + heartbeatFreq;
-      
-  }
+ 
    
   
   if(Serial.available() > 0){
@@ -287,6 +284,10 @@ void loop() {
   //float diff = 0;
   
   
+  int t = 30*1000;
+  if(millis() - checkHeadingTimer > t){
+      bearing = calculateBearing();
+  }
   //check gps and compass
   if (millis() - checkSensorTimer > 200) {
     
@@ -350,7 +351,7 @@ void loop() {
     //diff = diff * 5;
     float amt = map(diff, 0, 180, maxVol-40, minVol);
     
-    if(diff < 17){
+    if(diff < 10){
       amt = maxVol;
     }
     
@@ -442,6 +443,15 @@ void loop() {
   //if(ended && millis() - endSeqTimer > 40*1000){
    
   //}
+  
+    //Play heartbeat
+  if( millis() > heartbeatTimer && runHeartbeat){ // && hasFix && !ended
+      
+      soundSerial.print('#');
+      soundSerial.println(1);
+      heartbeatTimer = millis() + heartbeatFreq;
+      
+  }
   
   
 
