@@ -27,13 +27,13 @@ const static float PROGMEM wayPoints[nrWayPoints] = {
 -0.1378124221582155,51.50319487987932,1000,0.03, 
 -0.1363383460496292,51.50372257552351,750,0.02, //550 for tim
 -0.135799071403041,51.50347459854204,700,0.01,
--0.1327366711074507,51.50473651523561,900,0.02,
+-0.1327366711074507,51.50473651523561,900,0.025,
 -0.1311300017540207,51.50417597886298,1000,0.01,
--0.1289608896665839,51.50436612837829,850,0.01,
--0.129053198518656,51.50336534372459,650,0.01,
--0.1296192335709856,51.5023523498472,850,0.02,
+-0.1289608896665839,51.50436612837829,850,0.015,
+-0.129053198518656,51.50336534372459,650,0.015,
+-0.1296192335709856,51.5023523498472,850,0.025,
 -0.126391213483954,51.50216529277532,900,0.015,
--0.1258895659841042,51.502214776534,650,0.01,
+-0.1259226717839357,51.50228710075169,650,0.01,
 -0.1259794535685499,51.50349114093374,1000,0.02,
 -0.1262508840814458,51.5047233577215,650,0.02,
 -0.126473150172578,51.50527575989571,550,0.02,
@@ -73,6 +73,15 @@ const int radiusOfEarth = 6371; // in km
 float heading;
 
 long checkHeadingTimer;
+
+const int avgSize = 2;
+float currLatReadings[avgSize];
+float currLatAvg;
+float currLongReadings[avgSize];
+float currLongAvg;
+int avgIndex = 0;
+float gpsLatReading;
+float gpsLongReading;
 
 
 //Heartbeat samples
@@ -217,7 +226,7 @@ void getNexWayPoint() {
     
     if(wayPointIndex >= nrWayPoints && ended == false){
         ended = true;
-        endSeqTimer = millis() + 60000;
+        endSeqTimer = millis() + 50000;
         wayPointIndex = 0;
         targetVol = 204;
         //if(debug)
@@ -263,9 +272,6 @@ void loop() {
   heartbeatFreq = constrain(heartbeatFreq, 650,1400);
   
   
- 
-   
-  
   if(Serial.available() > 0){
         //heartbeatFreq = Serial.parseInt();
         //heartbeatSpace = Serial.parseInt();
@@ -284,9 +290,12 @@ void loop() {
   //float diff = 0;
   
   
-  int t = 30*1000;
-  if(millis() - checkHeadingTimer > t){
+//  int t = 30*1000;
+  if(millis() - checkHeadingTimer > 20000){
+      
       bearing = calculateBearing();
+      checkHeadingTimer = millis();
+  
   }
   //check gps and compass
   if (millis() - checkSensorTimer > 200) {
@@ -300,7 +309,7 @@ void loop() {
     
     //if (GPS.fix) {
       //hasFix = true;
-      
+     
       if( abs(GPS.latitudeDegrees-0) > 50 ){
         originLat = GPS.latitudeDegrees;
       }
@@ -309,6 +318,19 @@ void loop() {
       if( abs(GPS.longitudeDegrees-0) > 0.01 ){
         originLong = GPS.longitudeDegrees;
       }
+      
+//      currLatAvg = currLatAvg - currLatReadings[avgIndex];
+//      currLatReadings[avgIndex] = gpsLatReading;
+//      currLatAvg = currLatAvg + currLatReadings[avgIndex];
+//      
+//      originLat = currLatAvg/avgSize;
+//      
+//      //CurrentLong Avg
+//      currLongAvg = currLongAvg - currLongReadings[avgIndex];
+//      currLongReadings[avgIndex] = gpsLongReading;
+//      currLongAvg = currLongAvg + currLongReadings[avgIndex];
+//      
+//      originLong = currLongAvg/avgSize;
       
      if(debug){
         Serial.print("C,");
