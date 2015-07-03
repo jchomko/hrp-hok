@@ -23,20 +23,33 @@ void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
 int wayPointIndex = 0;
 const int nrWayPoints = 52;
 const static float PROGMEM wayPoints[nrWayPoints] = {
--0.1378124221582155,51.50319487987932,1000,0.03,
--0.1363383460496292,51.50372257552351,550,0.02,
+  //52 final waypoints
+-0.1378124221582155,51.50319487987932,1000,0.03, 
+-0.1363383460496292,51.50372257552351,650,0.02, //550 for tim
 -0.135799071403041,51.50347459854204,700,0.01,
 -0.1327366711074507,51.50473651523561,900,0.02,
 -0.1311300017540207,51.50417597886298,1000,0.01,
 -0.1289608896665839,51.50436612837829,850,0.01,
 -0.129053198518656,51.50336534372459,650,0.01,
--0.129637688697023,51.50231155023566,850,0.01,
--0.126398592998983,51.50216214662055,900,0.01,
--0.12593523014098,51.5023101803933,650,0.01,
--0.1260159638381075,51.50390109896986,1000,0.01,
--0.1262716680653198,51.50468010595399,650,0.01,
--0.126473150172578,51.5052757598957,550,0.01,
+-0.1296192335709856,51.5023523498472,850,0.02,
+-0.126391213483954,51.50216529277532,900,0.015,
+-0.1258895659841042,51.502214776534,650,0.01,
+-0.1259794535685499,51.50349114093374,1000,0.02,
+-0.1262508840814458,51.5047233577215,650,0.02,
+-0.126473150172578,51.50527575989571,550,0.02,
+
+//Mildmay
+//-0.08666606291494627,51.54876570306093,1000,0.02,
+//-0.08746145813916084,51.54878862889121,800,0.01,
+//-0.08720047218794047,51.54913161855076,700,0.01,
+//-0.08445619532468696,51.54901217659432,700,0.01,
+//-0.08433878673073991,51.54859635355947,800,0.01,
+//-0.08604099348546002,51.54874467479521,750,0.02,
+//-0.126473150172578,51.5052757598957,550,0.01,
+
 };
+
+
 
 
 long checkSensorTimer = millis();
@@ -61,7 +74,7 @@ float heading;
 
 
 //Heartbeat samples
-SoftwareSerial soundSerial(12,13);
+SoftwareSerial soundSerial(12,13); //12,13
 #define SFX_RST 15
 
 
@@ -75,14 +88,16 @@ int currentFreq;
 float freqInc = 0.005;
 
 
+
 //Volume
 #define LINE_BUFFER_SIZE  30
 char line_buffer[LINE_BUFFER_SIZE];
 
 int maxVol = 204;
-int minVol = 0;
+int minVol = 130;
 int volume = 0;
 int targetVol = 0;
+long volChangeTimer;
 
 //end sequence
 bool endSeq;
@@ -91,7 +106,7 @@ int endSeqDuration;
 
 //debug new devices - don't wait for gps
 //bool hasFix = false;
-bool debug = true;
+bool debug = false;
 bool ended = true;
 bool runHeartbeat = false;
 
@@ -108,6 +123,9 @@ void setup() {
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
+  GPS.sendCommand(PMTK_API_SET_FIX_CTL_1HZ);
+  GPS.sendCommand(PMTK_ENABLE_SBAS);
+  
   GPS.sendCommand(PGCMD_ANTENNA);
   useInterrupt(true);
   //Not sure if these are needed
@@ -148,6 +166,8 @@ void setup() {
   targetMinDist = 0.01;
   
   getNexWayPoint();
+  
+  //getNexWayPoint();
   
   calibrationTimer = millis();
   
@@ -217,8 +237,30 @@ void loop() {
   //if (checkSensorTimer > millis())  checkSensorTimer = millis();
  
  //if(debug){
+  if(heartbeatFreq > targetFreq){
+    heartbeatFreq -= freqInc;
+    //Serial.println(heartbeatFreq);
+  }
+  
+  if(heartbeatFreq < targetFreq){
+    heartbeatFreq += freqInc;
+    //tar.println(heartbeatFreq);
+  }
+  
+  heartbeatFreq = constrain(heartbeatFreq, 500,1400);
+  
+  
+   //Play heartbeat
+  if( millis() > heartbeatTimer && runHeartbeat){ // && hasFix && !ended
+      
+      soundSerial.print('#');
+      soundSerial.println(1);
+      heartbeatTimer = millis() + heartbeatFreq;
+      
+  }
    
-   if(Serial.available() > 0){
+  
+  if(Serial.available() > 0){
         //heartbeatFreq = Serial.parseInt();
         //heartbeatSpace = Serial.parseInt();
         char c = Serial.read();
@@ -235,17 +277,6 @@ void loop() {
   //float diff = map(targetVol, 170,204, 400,0);
   //float diff = 0;
   
-  if(heartbeatFreq > targetFreq){
-    heartbeatFreq -= freqInc;
-    //Serial.println(heartbeatFreq);
-  }
-  
-  if(heartbeatFreq < targetFreq){
-    heartbeatFreq += freqInc;
-    //tar.println(heartbeatFreq);
-  }
-  
-  heartbeatFreq = constrain(heartbeatFreq, 500,1400);
   
   //check gps and compass
   if (millis() - checkSensorTimer > 200) {
@@ -257,16 +288,17 @@ void loop() {
         return;  // we can fail to parse a sentence in which case we should just wait for another
     }
     
-    if (GPS.fix) {
+    //if (GPS.fix) {
       //hasFix = true;
       
-      //if( GPS.latitudeDegrees > 0.0){
+      if( abs(GPS.latitudeDegrees-0) > 50 ){
         originLat = GPS.latitudeDegrees;
-      //}
+      }
       
-      //if( GPS.longitudeDegrees > 0.0){
+      
+      if( abs(GPS.longitudeDegrees-0) > 0.01 ){
         originLong = GPS.longitudeDegrees;
-      //}
+      }
       
      if(debug){
         Serial.print("C,");
@@ -279,7 +311,7 @@ void loop() {
         Serial.println(targetLong, 6);
       }
       
-    } 
+   // } 
 
     //Compass
     sensors_event_t event;
@@ -306,13 +338,19 @@ void loop() {
     }
     
     //This is the accuracy value
-    diff = diff * 7 ;
-    float amt = map(diff, 0, 180, 204, 150);
+    //diff = diff * 5;
+    float amt = map(diff, 0, 180, maxVol-40, minVol);
+    
+    if(diff < 17){
+      amt = maxVol;
+    }
     
     if(ended == false){
+      
       targetVol = amt;
-      targetVol = constrain(targetVol, 150, 204);
-     }
+      targetVol = constrain(targetVol, minVol, maxVol);
+     
+   }
     
    checkSensorTimer = millis(); // reset the timer
 
@@ -321,19 +359,21 @@ void loop() {
 
   soundSerial.listen();
    
-  if(targetVol < volume ){
+  if(targetVol < volume  && millis() - volChangeTimer > 5){
        
       soundSerial.write(45); //-  
       soundSerial.write(10); //NL
-      delay(5);
+      //delay(5);
+      volChangeTimer = millis();
      
   }
   
-  if(targetVol > volume ){
+  if(targetVol > volume & millis() - volChangeTimer > 5){
        
        soundSerial.write(43); //++
        soundSerial.write(10); //NL
-       delay(5);
+       //delay(5);
+       volChangeTimer = millis();
   }
   
   if(soundSerial.available() ){
@@ -394,14 +434,7 @@ void loop() {
    
   //}
   
-  //Play heartbeat
-  if( millis() > heartbeatTimer && runHeartbeat){ // && hasFix && !ended
-      
-      soundSerial.print('#');
-      soundSerial.println(1);
-      heartbeatTimer = millis() + heartbeatFreq;
-      
-  }
+  
 
 }
 
