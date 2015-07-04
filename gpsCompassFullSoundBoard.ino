@@ -117,7 +117,7 @@ int endSeqDuration;
 
 //debug new devices - don't wait for gps
 //bool hasFix = false;
-bool debug = true;
+bool debug = false;
 bool ended = true;
 bool runHeartbeat = false;
 
@@ -272,8 +272,8 @@ void loop() {
   
   heartbeatFreq = constrain(heartbeatFreq, 650,1400);
   
-  
-  if(Serial.available() > 0){
+  if(debug){
+    if(Serial.available() > 0){
         //heartbeatFreq = Serial.parseInt();
         //heartbeatSpace = Serial.parseInt();
         char c = Serial.read();
@@ -281,8 +281,7 @@ void loop() {
         if(c == 'n'){
           getNexWayPoint();
         }
-  // }
-   
+     }
  }
     
 
