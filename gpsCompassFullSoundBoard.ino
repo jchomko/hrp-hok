@@ -33,8 +33,8 @@ const static float PROGMEM wayPoints[nrWayPoints] = {
 -0.129053198518656,51.50336534372459,650,0.015,
 -0.1296192335709856,51.5023523498472,850,0.025,
 -0.126391213483954,51.50216529277532,900,0.015,
--0.1259226717839357,51.50228710075169,650,0.01,
--0.1259794535685499,51.50349114093374,1000,0.02,
+-0.125916762199284,51.50228013221998,650,0.01,
+-0.1259220029863484,51.50322948865472,1000,0.02,
 -0.1262508840814458,51.5047233577215,650,0.02,
 -0.126473150172578,51.50527575989571,550,0.02,
 
@@ -201,6 +201,7 @@ void getNexWayPoint() {
      
      targetLong = pgm_read_float_near(wayPoints + wayPointIndex);
      targetLat = pgm_read_float_near(wayPoints + wayPointIndex + 1);
+     
      targetFreq = pgm_read_float_near(wayPoints + wayPointIndex + 2);
      targetMinDist = pgm_read_float_near(wayPoints + wayPointIndex + 3);
      
