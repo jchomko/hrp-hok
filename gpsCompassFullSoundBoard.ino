@@ -74,7 +74,7 @@ float heading;
 
 long checkHeadingTimer;
 
-const int avgSize = 2;
+const int avgSize = 3;
 float currLatReadings[avgSize];
 float currLatAvg;
 float currLongReadings[avgSize];
@@ -292,12 +292,12 @@ void loop() {
   
   
 //  int t = 30*1000;
- // if(millis() - checkHeadingTimer > 20000){
+  if(millis() - checkHeadingTimer > 3000){
       
- //     bearing = calculateBearing();
- //     checkHeadingTimer = millis();
+      bearing = calculateBearing();
+      checkHeadingTimer = millis();
   
-  //}
+  }
   //check gps and compass
   if (millis() - checkSensorTimer > 200) {
     
@@ -312,26 +312,28 @@ void loop() {
       //hasFix = true;
      
       if( abs(GPS.latitudeDegrees-0) > 50 ){
-        originLat = GPS.latitudeDegrees;
+        //originLat = GPS.latitudeDegrees;
+        gpsLatReading = GPS.latitudeDegrees;
       }
       
       
       if( abs(GPS.longitudeDegrees-0) > 0.01 ){
-        originLong = GPS.longitudeDegrees;
+       // originLong = GPS.longitudeDegrees;
+        gpsLongReading =  GPS.longitudeDegrees;
       }
       
-//      currLatAvg = currLatAvg - currLatReadings[avgIndex];
-//      currLatReadings[avgIndex] = gpsLatReading;
-//      currLatAvg = currLatAvg + currLatReadings[avgIndex];
-//      
-//      originLat = currLatAvg/avgSize;
-//      
-//      //CurrentLong Avg
-//      currLongAvg = currLongAvg - currLongReadings[avgIndex];
-//      currLongReadings[avgIndex] = gpsLongReading;
-//      currLongAvg = currLongAvg + currLongReadings[avgIndex];
-//      
-//      originLong = currLongAvg/avgSize;
+      currLatAvg = currLatAvg - currLatReadings[avgIndex];
+      currLatReadings[avgIndex] = gpsLatReading;
+      currLatAvg = currLatAvg + currLatReadings[avgIndex];
+      
+      originLat = currLatAvg/avgSize;
+      
+      //CurrentLong Avg
+      currLongAvg = currLongAvg - currLongReadings[avgIndex];
+      currLongReadings[avgIndex] = gpsLongReading;
+      currLongAvg = currLongAvg + currLongReadings[avgIndex];
+      
+      originLong = currLongAvg/avgSize;
       
      if(debug){
         Serial.print("C,");
