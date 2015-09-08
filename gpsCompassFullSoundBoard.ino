@@ -21,22 +21,17 @@ void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
 
 //Waypoints
 int wayPointIndex = 0;
-const int nrWayPoints = 52;
+const int nrWayPoints = 36;
 const static float PROGMEM wayPoints[nrWayPoints] = {
-  //52 final waypoints
--0.1378124221582155,51.50319487987932,1000,0.03, 
--0.1363383460496292,51.50372257552351,750,0.02, //550 for tim
--0.135799071403041,51.50347459854204,700,0.01,
--0.1327366711074507,51.50473651523561,900,0.025,
--0.1311300017540207,51.50417597886298,1000,0.01,
+-0.1357953432689996,51.50348334244563,1000,0.03,
+-0.13277334151656,51.50476310361701,900,0.03,
+-0.1310236367479378,51.50419893539772,1000,0.02,
 -0.1289608896665839,51.50436612837829,850,0.015,
 -0.129053198518656,51.50336534372459,650,0.015,
 -0.1296192335709856,51.5023523498472,850,0.025,
--0.126391213483954,51.50216529277532,900,0.015,
--0.125916762199284,51.50228013221998,650,0.01,
--0.1259220029863484,51.50322948865472,1000,0.02,
--0.1262508840814458,51.5047233577215,650,0.02,
--0.126473150172578,51.50527575989571,550,0.02,
+-0.125944067984517,51.50214267825037,900,0.02,
+-0.1261059756859928,51.50451783224607,750,0.05,
+-0.1274263624374383,51.50707678349465,550,0.05,
 
 //Mildmay
 //-0.08666606291494627,51.54876570306093,1000,0.02,
@@ -104,8 +99,8 @@ float freqInc = 0.005;
 #define LINE_BUFFER_SIZE  30
 char line_buffer[LINE_BUFFER_SIZE];
 
-int maxVol = 204;
-int minVol = 130;
+int maxVol = 176; // 176 for big one
+int minVol = 110;
 int volume = 0;
 int targetVol = 0;
 long volChangeTimer;
@@ -117,7 +112,7 @@ int endSeqDuration;
 
 //debug new devices - don't wait for gps
 //bool hasFix = false;
-bool debug = false;
+bool debug = true;
 bool ended = true;
 bool runHeartbeat = false;
 
@@ -125,9 +120,9 @@ long calibrationTimer;
 
 void setup() {
 
-  //if(debug){
+  if(debug){
     Serial.begin(115200);
-  //}
+  }
   
   delay(1000);
   //Setup GPS
@@ -178,7 +173,7 @@ void setup() {
   
   getNexWayPoint();
   
-  //getNexWayPoint();
+  getNexWayPoint();
   
   calibrationTimer = millis();
   checkHeadingTimer = millis();
@@ -196,8 +191,8 @@ void getNexWayPoint() {
      //Reading from SRAM 
      
      //Calculate bearing from current location - 
-     //originLong = targetLong;
-     //originLat = targetLat;
+     originLong = targetLong;
+     originLat = targetLat;
      
      targetLong = pgm_read_float_near(wayPoints + wayPointIndex);
      targetLat = pgm_read_float_near(wayPoints + wayPointIndex + 1);
@@ -227,7 +222,7 @@ void getNexWayPoint() {
     
     if(wayPointIndex >= nrWayPoints && ended == false){
         ended = true;
-        endSeqTimer = millis() + 50000;
+        endSeqTimer = millis() + 90000;
         wayPointIndex = 0;
         targetVol = 204;
         //if(debug)
@@ -291,12 +286,13 @@ void loop() {
   
   
 //  int t = 30*1000;
-  if(millis() - checkHeadingTimer > 3000){
+  //if(millis() - checkHeadingTimer > 3000){
       
-      bearing = calculateBearing();
-      checkHeadingTimer = millis();
+      //bearing = calculateBearing();
+      //checkHeadingTimer = millis();
   
-  }
+  //}
+  
   //check gps and compass
   if (millis() - checkSensorTimer > 200) {
     
@@ -317,7 +313,7 @@ void loop() {
       
       
       if( abs(GPS.longitudeDegrees-0) > 0.01 ){
-       // originLong = GPS.longitudeDegrees;
+        //originLong = GPS.longitudeDegrees;
         gpsLongReading =  GPS.longitudeDegrees;
       }
       
@@ -333,7 +329,11 @@ void loop() {
       currLongAvg = currLongAvg + currLongReadings[avgIndex];
       
       originLong = currLongAvg/avgSize;
-      
+//      
+      avgIndex += 1;
+      if(avgIndex >= avgSize){
+        avgIndex = 0;
+      }
      if(debug){
         Serial.print("C,");
         Serial.print(originLat, 6);
